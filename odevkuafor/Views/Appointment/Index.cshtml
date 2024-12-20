@@ -1,0 +1,39 @@
+﻿@model IEnumerable<odevkuafor.Models.Appointment>
+
+<h1>Randevu Listesi</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Müşteri</th>
+            <th>Hizmet</th>
+            <th>Çalışan</th>
+            <th>Hizmet Türü</th>
+            <th>Çalışan Uzmanlık Alanı</th>
+            <th>Tarih</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.CustomerName</td>
+                <td>@item.Service?.ServiceType</td>  <!-- Hizmet Tipi -->
+                <td>@item.Employee?.Name</td>        <!-- Çalışan Adı -->
+                <td>@item.Service?.ServiceType</td>  <!-- Hizmet Türü -->
+                <td>@item.Employee?.Specialization</td>  <!-- Çalışan Uzmanlık Alanı -->
+                <td>@item.AppointmentDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td> <!-- Randevu Tarihi -->
+                <td>
+                    <a class="btn btn-primary" asp-action="Edit" asp-route-id="@item.Id">Düzenle</a> |
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger">Sil</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a class="btn btn-success" asp-action="Create">Yeni Randevu Oluştur</a>
+

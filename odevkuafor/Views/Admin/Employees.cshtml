@@ -1,0 +1,26 @@
+﻿@model IEnumerable<odevkuafor.Models.Employee>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Specialization</th>
+            <th>Services</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var employee in Model)
+        {
+            <tr>
+                <td>@employee.Name</td>
+                <td>@employee.Specialization</td>
+                <td>
+                    @foreach (var service in employee.Services)
+                    {
+                        <span>@service.Name</span><br />
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

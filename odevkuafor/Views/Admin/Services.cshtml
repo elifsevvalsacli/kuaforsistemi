@@ -1,0 +1,26 @@
+﻿<h1>Hizmet Türleri</h1>
+<a href="@Url.Action("AddService", "Admin")">Hizmet Türü Ekle</a>
+<table>
+    <thead>
+        <tr>
+            <th>Adı</th>
+            <th>Ücreti</th>
+            <th>İşlem</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var service in Model)
+        {
+            <tr>
+                <td>@service.Name</td>
+                <td>@service.Price</td>
+                <td>
+                    <form method="post" action="@Url.Action("DeleteService", "Admin")">
+                        <input type="hidden" name="id" value="@service.Id" />
+                        <button type="submit">Sil</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
