@@ -1,0 +1,38 @@
+﻿@model odevkuafor.Models.Appointment
+
+@{
+    ViewData["Title"] = "Randevu Oluştur";
+}
+
+<h2>Randevu Oluştur</h2>
+
+<form method="post">
+    <div class="form-group">
+        <label for="ServiceId">Hizmet</label>
+        <select id="ServiceId" name="ServiceId" class="form-control">
+            <option value="">Hizmet Seçiniz</option>
+            @foreach (var service in ViewBag.Services as List<odevkuafor.Models.Service>)
+            {
+                <option value="@service.Id">@service.ServiceType</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="EmployeeId">Çalışan</label>
+        <select id="EmployeeId" name="EmployeeId" class="form-control">
+            <option value="">Çalışan Seçiniz</option>
+            @foreach (var employee in ViewBag.Employees as List<odevkuafor.Models.Employee>)
+            {
+                <option value="@employee.Id">@employee.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="AppointmentDate">Randevu Tarihi</label>
+        <input type="datetime-local" id="AppointmentDate" name="AppointmentDate" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+</form>

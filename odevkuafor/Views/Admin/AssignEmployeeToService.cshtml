@@ -1,0 +1,25 @@
+﻿@{
+    ViewBag.Title = "Çalışan-Hizmet Atama";
+}
+
+<h2>Çalışan-Hizmet Atama</h2>
+
+<form method="post" asp-action="AssignEmployeeToService" asp-controller="Admin">
+    <label for="employee">Çalışan Seç:</label>
+    <select name="employeeId" id="employee">
+        @foreach (var employee in ViewBag.Employees as List<odevkuafor.Models.Employee>)
+        {
+            <option value="@employee.Id">@employee.Name</option>
+        }
+    </select>
+
+    <label for="service">Hizmet Seç:</label>
+    <select name="serviceId" id="service">
+        @foreach (var service in ViewBag.Services as List<odevkuafor.Models.Service>)
+        {
+            <option value="@service.Id">@service.Name</option>
+        }
+    </select>
+
+    <button type="submit">Atama Yap</button>
+</form>
