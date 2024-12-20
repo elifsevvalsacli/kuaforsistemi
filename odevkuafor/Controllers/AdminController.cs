@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -26,14 +25,20 @@ namespace odevkuafor.Controllers
         // Çalışan Listesi
         public async Task<IActionResult> Employees()
         {
-            var employees = await _context.Employees.Include(e => e.EmployeeServices).ThenInclude(es => es.Service).ToListAsync();
+            var employees = await _context.Employees
+                .Include(e => e.EmployeeServices)
+                .ThenInclude(es => es.Service)
+                .ToListAsync();
             return View(employees);
         }
 
         // Hizmet Türleri Listesi
         public async Task<IActionResult> Services()
         {
-            var services = await _context.Services.Include(s => s.EmployeeServices).ThenInclude(es => es.Employee).ToListAsync();
+            var services = await _context.Services
+                .Include(s => s.EmployeeServices)
+                .ThenInclude(es => es.Employee)
+                .ToListAsync();
             return View(services);
         }
 

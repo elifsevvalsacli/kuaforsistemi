@@ -8,5 +8,15 @@
         <label>Ücret</label>
         <input type="number" name="Price" required />
     </div>
+    <div>
+        <label>Çalışan Seç</label>
+        <select name="EmployeeId" required>
+            <option value="">Çalışan Seçin</option>
+            @foreach (var employee in Model.Employees)
+            {
+                <option value="@employee.Id">@employee.Name</option>
+            }
+        </select>
+    </div>
     <button type="submit">Kaydet</button>
 </form>

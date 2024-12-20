@@ -1,25 +1,31 @@
 ﻿@{
-    ViewBag.Title = "Çalışan-Hizmet Atama";
+        ViewData["Title"] = "Çalışan-Hizmet Atama";
 }
 
-<h2>Çalışan-Hizmet Atama</h2>
+<h1>Çalışan-Hizmet Atama</h1>
 
-<form method="post" asp-action="AssignEmployeeToService" asp-controller="Admin">
-    <label for="employee">Çalışan Seç:</label>
-    <select name="employeeId" id="employee">
-        @foreach (var employee in ViewBag.Employees as List<odevkuafor.Models.Employee>)
-        {
-            <option value="@employee.Id">@employee.Name</option>
-        }
-    </select>
+<form asp-action="AssignEmployeeToService" method="post">
+    <div>
+        <label>Çalışan Seç</label>
+        <select name="employeeId" required>
+            <option value="">Çalışan Seçin</option>
+            @foreach (var employee in ViewBag.Employees)
+            {
+                <option value="@employee.Id">@employee.Name</option>
+            }
+        </select>
+    </div>
 
-    <label for="service">Hizmet Seç:</label>
-    <select name="serviceId" id="service">
-        @foreach (var service in ViewBag.Services as List<odevkuafor.Models.Service>)
-        {
-            <option value="@service.Id">@service.Name</option>
-        }
-    </select>
+    <div>
+        <label>Hizmet Seç</label>
+        <select name="serviceId" required>
+            <option value="">Hizmet Seçin</option>
+            @foreach (var service in ViewBag.Services)
+            {
+                <option value="@service.Id">@service.Name</option>
+            }
+        </select>
+    </div>
 
     <button type="submit">Atama Yap</button>
 </form>

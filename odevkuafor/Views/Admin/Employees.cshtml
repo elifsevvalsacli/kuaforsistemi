@@ -15,9 +15,16 @@
                 <td>@employee.Name</td>
                 <td>@employee.Specialization</td>
                 <td>
-                    @foreach (var service in employee.Services)
+                    @if (employee.Services != null && employee.Services.Any())
                     {
-                        <span>@service.Name</span><br />
+                        @foreach (var service in employee.Services)
+                        {
+                            <span>@service.Name</span><br />
+                        }
+                    }
+                    else
+                    {
+                        <span>No services assigned</span>
                     }
                 </td>
             </tr>
