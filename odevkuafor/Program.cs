@@ -56,6 +56,13 @@ app.UseSession(); // Oturum yönetimi
 app.UseAuthentication(); // Kimlik doğrulama işlemi
 app.UseAuthorization();  // Yetkilendirme işlemi
 
+// Veritabanı seed işlemi
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    ApplicationDbContext.SeedAdminUser(dbContext);  // Admin kullanıcısını ekle
+}
+
 // Routing işlemi
 app.MapControllerRoute(
     name: "default",

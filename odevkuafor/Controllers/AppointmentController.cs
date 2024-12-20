@@ -29,8 +29,10 @@ namespace odevkuafor.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            ViewBag.Services = await _context.Services.ToListAsync(); // Hizmetleri al
-            ViewBag.Employees = await _context.Employees.ToListAsync(); // Çalışanları al
+            // Hizmetler ve çalışanlar verisini ViewBag ile gönder
+            ViewBag.Services = await _context.Services.ToListAsync();
+            ViewBag.Employees = await _context.Employees.ToListAsync();
+
             return View();
         }
 
@@ -42,13 +44,16 @@ namespace odevkuafor.Controllers
             if (ModelState.IsValid)
             {
                 // Çalışanın uygunluğunu kontrol et
-                bool isEmployeeAvailable = await _context.Appointments.AnyAsync(a =>
-                    a.EmployeeId == appointment.EmployeeId &&
-                    a.AppointmentDate == appointment.AppointmentDate);
+                bool isEmployeeAvailable = await _context.Appointments
+                    .AnyAsync(a =>
+                        a.EmployeeId == appointment.EmployeeId &&
+                        a.AppointmentDate == appointment.AppointmentDate);
 
                 if (isEmployeeAvailable)
                 {
                     ModelState.AddModelError("", "Bu çalışan bu saatte başka bir randevuya sahip.");
+
+                    // Hizmetler ve çalışanlar verisini ViewBag ile tekrar gönder
                     ViewBag.Services = await _context.Services.ToListAsync();
                     ViewBag.Employees = await _context.Employees.ToListAsync();
                     return View(appointment);
@@ -61,6 +66,7 @@ namespace odevkuafor.Controllers
                 return RedirectToAction(nameof(Index)); // Randevu listesine yönlendir
             }
 
+            // Model geçersizse, hizmetler ve çalışanlar verisini ViewBag ile tekrar gönder
             ViewBag.Services = await _context.Services.ToListAsync();
             ViewBag.Employees = await _context.Employees.ToListAsync();
             return View(appointment);
@@ -76,8 +82,10 @@ namespace odevkuafor.Controllers
                 return NotFound();
             }
 
+            // Hizmetler ve çalışanlar verisini ViewBag ile gönder
             ViewBag.Services = await _context.Services.ToListAsync();
             ViewBag.Employees = await _context.Employees.ToListAsync();
+
             return View(appointment);
         }
 
@@ -89,14 +97,17 @@ namespace odevkuafor.Controllers
             if (ModelState.IsValid)
             {
                 // Çalışanın uygunluğunu kontrol et
-                bool isEmployeeAvailable = await _context.Appointments.AnyAsync(a =>
-                    a.EmployeeId == appointment.EmployeeId &&
-                    a.AppointmentDate == appointment.AppointmentDate &&
-                    a.Id != appointment.Id); // Kendisi hariç
+                bool isEmployeeAvailable = await _context.Appointments
+                    .AnyAsync(a =>
+                        a.EmployeeId == appointment.EmployeeId &&
+                        a.AppointmentDate == appointment.AppointmentDate &&
+                        a.Id != appointment.Id); // Kendisi hariç
 
                 if (isEmployeeAvailable)
                 {
                     ModelState.AddModelError("", "Bu çalışan bu saatte başka bir randevuya sahip.");
+
+                    // Hizmetler ve çalışanlar verisini ViewBag ile tekrar gönder
                     ViewBag.Services = await _context.Services.ToListAsync();
                     ViewBag.Employees = await _context.Employees.ToListAsync();
                     return View(appointment);
@@ -109,6 +120,7 @@ namespace odevkuafor.Controllers
                 return RedirectToAction(nameof(Index)); // Randevu listesine yönlendir
             }
 
+            // Model geçersizse, hizmetler ve çalışanlar verisini ViewBag ile tekrar gönder
             ViewBag.Services = await _context.Services.ToListAsync();
             ViewBag.Employees = await _context.Employees.ToListAsync();
             return View(appointment);
