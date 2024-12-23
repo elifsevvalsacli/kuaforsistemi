@@ -6,7 +6,7 @@ public class ApplicationDbContext : DbContext
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
     public DbSet<Appointment> Appointments { get; set; } = null!;
-    public DbSet<User>? Users { get; set; }
+    public DbSet<User> Users { get; set; } = null!;
     public DbSet<Service> Services { get; set; } = null!;
     public DbSet<Employee> Employees { get; set; } = null!;
     public DbSet<EmployeeService> EmployeeServices { get; set; } = null!;
@@ -67,6 +67,8 @@ public class ApplicationDbContext : DbContext
     {
         var adminEmail = "b211210068@sakarya.edu.tr";
         var adminPassword = "sau";  // Şifreyi burada belirtiyoruz
+        var hashedPassword = BCrypt.Net.BCrypt.HashPassword(adminPassword);  // Şifreyi hashliyoruz
+
         var adminUser = context.Users.FirstOrDefault(u => u.Email == adminEmail);
 
         if (adminUser == null)
@@ -74,7 +76,7 @@ public class ApplicationDbContext : DbContext
             adminUser = new User
             {
                 Email = adminEmail,
-                Password = adminPassword,
+                Password = hashedPassword,  // Hashlenmiş şifreyi kaydediyoruz
                 IsAdmin = true  // Admin olarak işaretliyoruz
             };
 
@@ -83,4 +85,3 @@ public class ApplicationDbContext : DbContext
         }
     }
 }
- 
