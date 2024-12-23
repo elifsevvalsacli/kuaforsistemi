@@ -10,12 +10,13 @@ namespace odevkuafor.Models
 
         public decimal Price { get; set; } // Hizmet ücreti
 
-        public string Name { get; set; } = string.Empty;  // Hizmet adı
-
+        public string Name { get; set; } = string.Empty; // Hizmet adı
 
         // Hizmetin hangi çalışana ait olduğunu belirtir
-        public List<Employee> Employees { get; set; } = new List<Employee>();
+        public List<Employee> Employees { get; set; } = new(); // Daha modern bir yazım
+
         // Many-to-Many ilişki için navigation property
-        public ICollection<EmployeeService> EmployeeServices { get; set; } = new List<EmployeeService>();
+        public ICollection<EmployeeService> EmployeeServices { get; set; } = new HashSet<EmployeeService>();
     }
 }
+
