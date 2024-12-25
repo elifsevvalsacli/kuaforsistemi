@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using odevkuafor.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // PostgreSQL bağlantısı için DbContext yapılandırması
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); // PostgreSQL bağlantısı
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // MVC desteği
 builder.Services.AddControllersWithViews();
@@ -23,14 +24,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization(options =>
 {
-    // Admin kullanıcılar için özel yetkilendirme politikası
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin")); // Admin politikası
 });
 
 // Oturum desteği yapılandırması
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Oturum zaman aşımı süresi
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Oturum zaman aşımı
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true; // Gerekli çerez işaretleme
 });
@@ -41,7 +41,7 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts(); // HTTPS Strict Transport Security
+    app.UseHsts(options => options.MaxAge(days: 365)); // HSTS süresini 1 yıl olarak ayarlayın
 }
 else
 {
