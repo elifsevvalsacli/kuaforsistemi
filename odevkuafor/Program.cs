@@ -1,82 +1,79 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using odevkuafor.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// PostgreSQL bağlantısı için DbContext yapılandırması
+// Servisleri ekliyoruz
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); // PostgreSQL için UseNpgsql
 
-// MVC desteği
+// MVC desteğini ekliyoruz
 builder.Services.AddControllersWithViews();
 
-// Kimlik doğrulama ve yetkilendirme servisleri
+// Kimlik doğrulama ve yetkilendirme servislerini ekliyoruz
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Account/Login"; // Giriş sayfası
-        options.AccessDeniedPath = "/Account/AccessDenied"; // Yetki reddedildi sayfası
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Çerez geçerlilik süresi
-        options.SlidingExpiration = true; // Çerez süresi her istekle uzatılır
+        options.LoginPath = "/Account/Login"; // Giriş yapma sayfası
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Cookie süresi
     });
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin")); // Admin politikası
+    // Özel yetkilendirme politikaları ekleyebilirsiniz
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
 
-// Oturum desteği yapılandırması
+// Oturum desteği
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Oturum zaman aşımı
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Oturum süresi
     options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true; // Gerekli çerez işaretleme
+    options.Cookie.IsEssential = true; // Gerekli oturum cookie
 });
 
 var app = builder.Build();
 
-// Hata işleme ve güvenlik yapılandırması
+// HTTP request pipeline yapılandırması
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts(options => options.MaxAge(days: 365)); // HSTS süresini 1 yıl olarak ayarlayın
+    app.UseHsts();
 }
 else
 {
-    app.UseDeveloperExceptionPage(); // Geliştirme ortamı hata sayfası
+    app.UseDeveloperExceptionPage();  // Geliştirme ortamında hata sayfası
 }
 
-// HTTPS yönlendirme ve statik dosyalar
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// Routing ve Middleware yapılandırması
 app.UseRouting();
-app.UseSession(); // Oturum yönetimi
-app.UseAuthentication(); // Kimlik doğrulama
-app.UseAuthorization();  // Yetkilendirme
 
-// Veritabanı seed işlemi (Admin kullanıcısı ekleme)
+// Authentication ve Authorization middleware'lerini ekliyoruz
+app.UseSession(); // Oturum yönetimi
+app.UseAuthentication(); // Kimlik doğrulama işlemi
+app.UseAuthorization();  // Yetkilendirme işlemi
+
+// Veritabanı seed işlemi
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    ApplicationDbContext.SeedAdminUser(dbContext); // Admin kullanıcıyı ekle
+    ApplicationDbContext.SeedAdminUser(dbContext);  // Admin kullanıcısını ekle
 }
-
-// Varsayılan rotalar
+// Routing işlemi
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Hesap yönetimi rotaları
+// Özel bir yönlendirme (isteğe bağlı)
 app.MapControllerRoute(
     name: "account",
     pattern: "Account/{action=Login}/{id?}",
     defaults: new { controller = "Account" });
 
-// Admin yönetim rotaları
+// Admin için özel bir yönlendirme
 app.MapControllerRoute(
     name: "admin",
     pattern: "Admin/{action=Index}/{id?}",

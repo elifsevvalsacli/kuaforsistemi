@@ -8,7 +8,6 @@ namespace odevkuafor.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        // Constructor
         public AppointmentController(ApplicationDbContext context)
         {
             _context = context;
@@ -18,8 +17,8 @@ namespace odevkuafor.Controllers
         public async Task<IActionResult> Index()
         {
             var appointments = await _context.Appointments
-                .Include(a => a.Service)  // Hizmeti dahil et
-                .Include(a => a.Employee) // Çalışanı dahil et
+                .Include(a => a.Service)
+                .Include(a => a.Employee)
                 .ToListAsync();
 
             return View(appointments);
@@ -29,63 +28,63 @@ namespace odevkuafor.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            // Hizmetler ve çalışanlar verisini ViewBag ile gönder
-            ViewBag.Services = await _context.Services.ToListAsync();
-            ViewBag.Employees = await _context.Employees.ToListAsync();
+            var viewModel = new AppointmentViewModel
+            {
+                Employees = await _context.Employees.ToListAsync(),
+                Services = await _context.Services.ToListAsync(),
+                AppointmentDate = DateTime.Now // Varsayılan değer
+            };
 
-            return View();
+            return View(viewModel);
         }
-
         // Randevu Oluşturma İşlemi (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Appointment appointment)
+        public async Task<IActionResult> Create(AppointmentViewModel viewModel)
         {
             if (ModelState.IsValid)
             {
-                // Çalışanın uygunluğunu kontrol et
-                bool isEmployeeAvailable = await _context.Appointments
-                    .AnyAsync(a =>
-                        a.EmployeeId == appointment.EmployeeId &&
-                        a.AppointmentDate == appointment.AppointmentDate);
+                var appointment = new Appointment
+                {
+                    CustomerName = viewModel.CustomerName,
+                    AppointmentDate = viewModel.AppointmentDate,
+                    EmployeeId = viewModel.EmployeeId,
+                    ServiceId = viewModel.ServiceId
+                };
 
-                if (isEmployeeAvailable)
+                if (await IsEmployeeAvailable(appointment))
                 {
                     ModelState.AddModelError("", "Bu çalışan bu saatte başka bir randevuya sahip.");
-
-                    // Hizmetler ve çalışanlar verisini ViewBag ile tekrar gönder
-                    ViewBag.Services = await _context.Services.ToListAsync();
-                    ViewBag.Employees = await _context.Employees.ToListAsync();
-                    return View(appointment);
+                    viewModel.Employees = await _context.Employees.ToListAsync();
+                    viewModel.Services = await _context.Services.ToListAsync();
+                    return View(viewModel);
                 }
 
-                // Randevuyu kaydet
                 _context.Appointments.Add(appointment);
                 await _context.SaveChangesAsync();
-
-                return RedirectToAction(nameof(Index)); // Randevu listesine yönlendir
+                return RedirectToAction(nameof(Index));
             }
 
-            // Model geçersizse, hizmetler ve çalışanlar verisini ViewBag ile tekrar gönder
-            ViewBag.Services = await _context.Services.ToListAsync();
-            ViewBag.Employees = await _context.Employees.ToListAsync();
-            return View(appointment);
+            viewModel.Employees = await _context.Employees.ToListAsync();
+            viewModel.Services = await _context.Services.ToListAsync();
+            return View(viewModel);
         }
 
         // Randevu Düzenleme Sayfası (GET)
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var appointment = await _context.Appointments.FindAsync(id);
+            var appointment = await _context.Appointments
+                .Include(a => a.Service)
+                .Include(a => a.Employee)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
             if (appointment == null)
             {
                 return NotFound();
             }
 
-            // Hizmetler ve çalışanlar verisini ViewBag ile gönder
-            ViewBag.Services = await _context.Services.ToListAsync();
-            ViewBag.Employees = await _context.Employees.ToListAsync();
-
+            await LoadDropdownData();
             return View(appointment);
         }
 
@@ -96,33 +95,19 @@ namespace odevkuafor.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Çalışanın uygunluğunu kontrol et
-                bool isEmployeeAvailable = await _context.Appointments
-                    .AnyAsync(a =>
-                        a.EmployeeId == appointment.EmployeeId &&
-                        a.AppointmentDate == appointment.AppointmentDate &&
-                        a.Id != appointment.Id); // Kendisi hariç
-
-                if (isEmployeeAvailable)
+                if (await IsEmployeeAvailable(appointment, appointment.Id))
                 {
                     ModelState.AddModelError("", "Bu çalışan bu saatte başka bir randevuya sahip.");
-
-                    // Hizmetler ve çalışanlar verisini ViewBag ile tekrar gönder
-                    ViewBag.Services = await _context.Services.ToListAsync();
-                    ViewBag.Employees = await _context.Employees.ToListAsync();
+                    await LoadDropdownData();
                     return View(appointment);
                 }
 
-                // Randevuyu güncelle
                 _context.Appointments.Update(appointment);
                 await _context.SaveChangesAsync();
-
-                return RedirectToAction(nameof(Index)); // Randevu listesine yönlendir
+                return RedirectToAction(nameof(Index));
             }
 
-            // Model geçersizse, hizmetler ve çalışanlar verisini ViewBag ile tekrar gönder
-            ViewBag.Services = await _context.Services.ToListAsync();
-            ViewBag.Employees = await _context.Employees.ToListAsync();
+            await LoadDropdownData();
             return View(appointment);
         }
 
@@ -140,7 +125,27 @@ namespace odevkuafor.Controllers
             _context.Appointments.Remove(appointment);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Index)); // Randevu listesine yönlendir
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<bool> IsEmployeeAvailable(Appointment appointment, int? excludeAppointmentId = null)
+        {
+            var appointmentDate = appointment.AppointmentDate;
+            var startTime = appointmentDate.Date.Add(appointmentDate.TimeOfDay);
+            var endTime = startTime.AddHours(1); // Varsayılan olarak 1 saatlik randevu
+
+            return await _context.Appointments
+                .AnyAsync(a =>
+                    a.EmployeeId == appointment.EmployeeId &&
+                    a.AppointmentDate >= startTime &&
+                    a.AppointmentDate < endTime &&
+                    (excludeAppointmentId == null || a.Id != excludeAppointmentId));
+        }
+        // Dropdown Verilerini Yükleme
+        private async Task LoadDropdownData()
+        {
+            ViewBag.Services = await _context.Services.ToListAsync() ?? new List<Service>();
+            ViewBag.Employees = await _context.Employees.ToListAsync() ?? new List<Employee>();
         }
     }
 }

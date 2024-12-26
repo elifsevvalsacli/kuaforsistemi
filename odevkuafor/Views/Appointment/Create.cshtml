@@ -1,44 +1,56 @@
-﻿@model List<odevkuafor.Models.AppointmentViewModel>
+﻿@using odevkuafor.Models
+@model AppointmentViewModel
 
-<h2>Randevu Oluştur</h2>
+<div class="container mt-4">
+    <h2 class="mb-4">Randevu Oluştur</h2>
 
-<form asp-action="Create" method="post">
-    <div>
-        <label for="CustomerName">Adınız:</label>
-        <input type="text" id="CustomerName" name="CustomerName" required />
-    </div>
+    <form asp-action="Create" method="post" class="needs-validation" novalidate>
+        <div class="mb-3">
+            <label for="CustomerName" class="form-label">Adınız:</label>
+            <input type="text" class="form-control" id="CustomerName" asp-for="CustomerName" required />
+            <span asp-validation-for="CustomerName" class="text-danger"></span>
+        </div>
 
-    <div>
-        <label for="AppointmentDate">Randevu Tarihi:</label>
-        <input type="datetime-local" id="AppointmentDate" name="AppointmentDate" required />
-    </div>
+        <div class="mb-3">
+            <label for="AppointmentDate" class="form-label">Randevu Tarihi:</label>
+            <input type="datetime-local" class="form-control" id="AppointmentDate" asp-for="AppointmentDate" required />
+            <span asp-validation-for="AppointmentDate" class="text-danger"></span>
+        </div>
 
-    <div>
-        <label for="EmployeeId">Kuaför Seçin:</label>
-        <select id="EmployeeId" name="EmployeeId" required>
-            <option value="">Kuaför Seçin</option>
-            @foreach (var employee in Model)
-            {
-                <option value="@employee.EmployeeId">@employee.EmployeeName</option>
-            }
-        </select>
-    </div>
-
-    <div>
-        <label for="ServiceId">Hizmet Seçin:</label>
-        <select id="ServiceId" name="ServiceId" required>
-            <option value="">Hizmet Seçin</option>
-            @foreach (var employee in Model)
-            {
-                <optgroup label="@employee.EmployeeName">
-                    @foreach (var service in employee.Services)
+        <div class="mb-3">
+            <label for="EmployeeId" class="form-label">Kuaför Seçin:</label>
+            <select id="EmployeeId" asp-for="EmployeeId" class="form-select" required>
+                <option value="">Kuaför Seçin</option>
+                @if (Model?.Employees != null)
+                {
+                    @foreach (var employee in Model.Employees)
                     {
-                        <option value="@service.Id">@service.Name - @service.Price</option>
+                        <option value="@employee.Id">@employee.Name</option>
                     }
-                </optgroup>
-            }
-        </select>
-    </div>
+                }
+            </select>
+            <span asp-validation-for="EmployeeId" class="text-danger"></span>
+        </div>
 
-    <button type="submit">Randevu Oluştur</button>
-</form>
+        <div class="mb-3">
+            <label for="ServiceId" class="form-label">Hizmet Seçin:</label>
+            <select id="ServiceId" asp-for="ServiceId" class="form-select" required>
+                <option value="">Hizmet Seçin</option>
+                @if (Model?.Services != null)
+                {
+                    @foreach (var service in Model.Services)
+                    {
+                        <option value="@service.Id">@service.Name - @service.Price₺</option>
+                    }
+                }
+            </select>
+            <span asp-validation-for="ServiceId" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Randevu Oluştur</button>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
