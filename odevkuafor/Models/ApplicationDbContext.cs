@@ -15,50 +15,36 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Appointment tablosu
-        modelBuilder.Entity<Appointment>(entity =>
-        {
-            entity.HasKey(a => a.Id);
-
-            entity.HasOne(a => a.Service)
-                  .WithMany()
-                  .HasForeignKey(a => a.ServiceId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(a => a.Employee)
-                  .WithMany()
-                  .HasForeignKey(a => a.EmployeeId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // Service tablosu
+        // Service entity configuration
         modelBuilder.Entity<Service>(entity =>
         {
             entity.HasKey(s => s.Id);
             entity.Property(s => s.Name).IsRequired().HasMaxLength(100);
             entity.Property(s => s.Price).IsRequired();
+
+            // Service silindiğinde ilişkili EmployeeServices kayıtları da silinsin
+            entity.HasMany(s => s.EmployeeServices)
+                  .WithOne(es => es.Service)
+                  .HasForeignKey(es => es.ServiceId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Employee tablosu
-        modelBuilder.Entity<Employee>(entity =>
+        // Appointment entity configuration
+        modelBuilder.Entity<Appointment>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Specialization).IsRequired().HasMaxLength(100);
+            entity.HasKey(a => a.Id);
+
+            // Service-Appointment ilişkisi
+            entity.HasOne(a => a.Service)
+                  .WithMany(s => s.Appointments)
+                  .HasForeignKey(a => a.ServiceId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // EmployeeService Many-to-Many ilişki
+        // EmployeeService configuration
         modelBuilder.Entity<EmployeeService>(entity =>
         {
             entity.HasKey(es => new { es.EmployeeId, es.ServiceId });
-
-            entity.HasOne(es => es.Employee)
-                  .WithMany(e => e.EmployeeServices)
-                  .HasForeignKey(es => es.EmployeeId);
-
-            entity.HasOne(es => es.Service)
-                  .WithMany(s => s.EmployeeServices)
-                  .HasForeignKey(es => es.ServiceId);
         });
     }
 
@@ -66,22 +52,33 @@ public class ApplicationDbContext : DbContext
     public static void SeedAdminUser(ApplicationDbContext context)
     {
         var adminEmail = "b211210068@sakarya.edu.tr";
-        var adminPassword = "sau";  // Şifreyi burada belirtiyoruz
-        var hashedPassword = BCrypt.Net.BCrypt.HashPassword(adminPassword);  // Şifreyi hashliyoruz
+        var adminPassword = "sau";
 
+        // Admin kullanıcısını kontrol et
         var adminUser = context.Users.FirstOrDefault(u => u.Email == adminEmail);
 
         if (adminUser == null)
         {
+            // Yeni hash oluştur
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+
             adminUser = new User
             {
                 Email = adminEmail,
-                Password = hashedPassword,  // Hashlenmiş şifreyi kaydediyoruz
-                IsAdmin = true  // Admin olarak işaretliyoruz
+                Password = hashedPassword,
+                IsAdmin = true
             };
 
             context.Users.Add(adminUser);
-            context.SaveChanges();
+            try
+            {
+                context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                // Hata durumunda loglama yapabilirsiniz
+                Console.WriteLine($"Admin user seed error: {ex.Message}");
+            }
         }
     }
 }

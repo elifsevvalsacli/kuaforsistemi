@@ -1,11 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 using odevkuafor.Models;
 
 namespace odevkuafor.Controllers
@@ -19,130 +16,113 @@ namespace odevkuafor.Controllers
             _context = context;
         }
 
-        // GET: /Account/Register
         [HttpGet]
         public IActionResult Register()
         {
             return View();
         }
 
-        // POST: /Account/Register
         [HttpPost]
         public async Task<IActionResult> Register(User user)
         {
             if (ModelState.IsValid)
             {
-                // E-posta kontrolü
                 var existingUser = await _context.Users
                     .FirstOrDefaultAsync(u => u.Email == user.Email);
 
                 if (existingUser != null)
                 {
-                    // Hata mesajı ekle
                     ModelState.AddModelError("Email", "Bu e-posta zaten kayıtlı.");
                     return View(user);
                 }
 
-                // Parolayı hashle
-                user.Password = HashPassword(user.Password);
+                // BCrypt ile şifreleme 
+                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+                user.IsAdmin = false; // Yeni kayıtlar için varsayılan olarak admin değil
 
-                // Kullanıcıyı veritabanına ekle
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                // Kullanıcı kaydından sonra oturum açtır
-                await SignInUser(user.Email);
+                // Claims oluştur ve giriş yap
+                var claims = new List<Claim>
+               {
+                   new Claim(ClaimTypes.Email, user.Email),
+                   new Claim(ClaimTypes.Role, "User")
+               };
 
-                // Randevu oluşturma sayfasına yönlendir
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(30)
+                };
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(claimsIdentity),
+                    authProperties);
+
                 return RedirectToAction("Create", "Appointment");
             }
 
             return View(user);
         }
 
-        // GET: /Account/Login
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
 
-        // POST: /Account/Login
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
             {
-                var existingUser = await _context.Users
+                var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Email == model.Email);
 
-                if (existingUser != null)
+                if (user != null && BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
                 {
-                    // Şifreyi doğrula
-                    if (VerifyPassword(model.Password, existingUser.Password))
+                    var claims = new List<Claim>
+                   {
+                       new Claim(ClaimTypes.Email, user.Email),
+                       new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
+                   };
+
+                    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                    var authProperties = new AuthenticationProperties
                     {
-                        await SignInUser(existingUser.Email);
-                        return RedirectToAction("Create", "Appointment");
+                        IsPersistent = true,
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(30)
+                    };
+
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(claimsIdentity),
+                        authProperties);
+
+                    if (user.IsAdmin)
+                    {
+                        return RedirectToAction("Index", "Admin");
                     }
+                    return RedirectToAction("Create", "Appointment");
                 }
 
-                // Hata mesajı ekle
                 ModelState.AddModelError("", "Geçersiz e-posta veya şifre.");
             }
 
             return View(model);
         }
 
-        // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            // Kullanıcıyı çıkış yap
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-            // Anasayfaya yönlendir
             return RedirectToAction("Index", "Home");
-        }
-
-        // Kullanıcıyı oturum açtır
-        private async Task SignInUser(string email)
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Email, email)
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(30)
-            };
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity), authProperties);
-        }
-
-        // Parolayı hashleme
-        private string HashPassword(string password)
-        {
-            using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes("SabitBirAnahtar123!")))
-            {
-                var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hash);
-            }
-        }
-
-        // Şifre doğrulama
-        private bool VerifyPassword(string inputPassword, string hashedPassword)
-        {
-            using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes("SabitBirAnahtar123!")))
-            {
-                var inputHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(inputPassword));
-                return Convert.ToBase64String(inputHash) == hashedPassword;
-            }
         }
     }
 }
-

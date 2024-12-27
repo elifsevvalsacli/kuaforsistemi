@@ -13,13 +13,44 @@
 
         <div class="mb-3">
             <label for="AppointmentDate" class="form-label">Randevu Tarihi:</label>
-            <input type="datetime-local" class="form-control" id="AppointmentDate" asp-for="AppointmentDate" required />
+            <input type="date" class="form-control" id="AppointmentDate"
+                   min="@DateTime.Now.ToString("yyyy-MM-dd")"
+                   asp-for="AppointmentDate"
+                   required
+                   onchange="updateAvailableHours()" />
             <span asp-validation-for="AppointmentDate" class="text-danger"></span>
         </div>
 
         <div class="mb-3">
+            <label for="AppointmentTime" class="form-label">Randevu Saati:</label>
+            <select class="form-select" id="AppointmentTime" name="AppointmentTime" required>
+                <option value="">Önce diğer alanları doldurun</option>
+            </select>
+            <div class="invalid-feedback">
+                Lütfen randevu saati seçin
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="ServiceId" class="form-label">Hizmet Seçin:</label>
+            <select id="ServiceId" asp-for="ServiceId" class="form-select" required onchange="updateAvailableHours()">
+                <option value="">Hizmet Seçin</option>
+                @if (Model?.Services != null)
+                {
+                    @foreach (var service in Model.Services)
+                    {
+                        <option value="@service.Id" data-duration="@service.DurationInMinutes">
+                            @service.Name - @service.Price₺ (@(service.DurationInMinutes) dakika)
+                        </option>
+                    }
+                }
+            </select>
+            <span asp-validation-for="ServiceId" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
             <label for="EmployeeId" class="form-label">Kuaför Seçin:</label>
-            <select id="EmployeeId" asp-for="EmployeeId" class="form-select" required>
+            <select id="EmployeeId" asp-for="EmployeeId" class="form-select" required onchange="updateAvailableHours()">
                 <option value="">Kuaför Seçin</option>
                 @if (Model?.Employees != null)
                 {
@@ -32,25 +63,83 @@
             <span asp-validation-for="EmployeeId" class="text-danger"></span>
         </div>
 
-        <div class="mb-3">
-            <label for="ServiceId" class="form-label">Hizmet Seçin:</label>
-            <select id="ServiceId" asp-for="ServiceId" class="form-select" required>
-                <option value="">Hizmet Seçin</option>
-                @if (Model?.Services != null)
-                {
-                    @foreach (var service in Model.Services)
-                    {
-                        <option value="@service.Id">@service.Name - @service.Price₺</option>
-                    }
-                }
-            </select>
-            <span asp-validation-for="ServiceId" class="text-danger"></span>
-        </div>
-
         <button type="submit" class="btn btn-primary">Randevu Oluştur</button>
     </form>
 </div>
+<script>function updateAvailableHours() {
+        const dateInput = document.getElementById('AppointmentDate');
+        const employeeSelect = document.getElementById('EmployeeId');
+        const serviceSelect = document.getElementById('ServiceId');
+        const timeSelect = document.getElementById('AppointmentTime');
 
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+        const date = dateInput.value;
+        const employeeId = employeeSelect.value;
+        const serviceId = serviceSelect.value;
+
+        // Tüm gerekli alanların dolu olduğundan emin ol
+        if (!date || !employeeId || !serviceId) {
+            timeSelect.innerHTML = '<option value="">Önce diğer alanları doldurun</option>';
+            return;
+        }
+
+        const selectedDate = new Date(date);
+        const dayOfWeek = selectedDate.getDay();
+
+        // Salı günü kontrolü (2 = Salı)
+        if (dayOfWeek === 2) {
+            alert('Salı günleri işletmemiz kapalıdır.');
+            dateInput.value = '';
+            timeSelect.innerHTML = '<option value="">Saat Seçin</option>';
+            return;
+        }
+
+        // Loading durumunu göster
+        timeSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+        timeSelect.disabled = true;
+
+        // API'yi çağır
+        fetch(`/Appointment/GetAvailableHours?date=${date}&employeeId=${employeeId}&serviceId=${serviceId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(hours => {
+                timeSelect.innerHTML = '<option value="">Saat Seçin</option>';
+                if (hours && hours.length > 0) {
+                    hours.forEach(hour => {
+                        const option = document.createElement('option');
+                        option.value = hour;
+                        option.textContent = hour;
+                        timeSelect.appendChild(option);
+                    });
+                } else {
+                    timeSelect.innerHTML = '<option value="">Uygun saat bulunamadı</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                timeSelect.innerHTML = '<option value="">Hata oluştu</option>';
+            })
+            .finally(() => {
+                timeSelect.disabled = false;
+            });
+    }
+
+    // Sayfa yüklendiğinde ve ilgili alanlarda değişiklik olduğunda güncelle
+    document.addEventListener('DOMContentLoaded', function () {
+        const dateInput = document.getElementById('AppointmentDate');
+        const employeeSelect = document.getElementById('EmployeeId');
+        const serviceSelect = document.getElementById('ServiceId');
+
+        // Bugünden önceki tarihleri seçilemez yap
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dateInput.min = today.toISOString().split('T')[0];
+
+        // Event listener'ları ekle
+        dateInput.addEventListener('change', updateAvailableHours);
+        employeeSelect.addEventListener('change', updateAvailableHours);
+        serviceSelect.addEventListener('change', updateAvailableHours);
+    });</script>
