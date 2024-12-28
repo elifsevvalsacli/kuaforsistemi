@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "RyZj31Pj4fCONzd/eq/yLAwrd20lhg4MsjnSvm0G/iQ=",
+  "Hash": "xRoHCyAi428LPUCWovg4Ht/97FA/9Ml2ir3bInfZizQ=",
   "Source": "odevkuafor",
   "BasePath": "_content/odevkuafor",
   "Mode": "Default",
@@ -83,6 +83,23 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/favicon.ico"
+    },
+    {
+      "Identity": "/Users/yeni/Projects/odevkuafor/odevkuafor/wwwroot/images/beauty-salon.jpg",
+      "SourceId": "odevkuafor",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/yeni/Projects/odevkuafor/odevkuafor/wwwroot/",
+      "BasePath": "_content/odevkuafor",
+      "RelativePath": "images/beauty-salon.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/images/beauty-salon.jpg"
     },
     {
       "Identity": "/Users/yeni/Projects/odevkuafor/odevkuafor/wwwroot/js/site.js",

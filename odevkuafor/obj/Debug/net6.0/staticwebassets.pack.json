@@ -13,6 +13,10 @@
       "PackagePath": "staticwebassets/favicon.ico"
     },
     {
+      "Id": "/Users/yeni/Projects/odevkuafor/odevkuafor/wwwroot/images/beauty-salon.jpg",
+      "PackagePath": "staticwebassets/images/beauty-salon.jpg"
+    },
+    {
       "Id": "/Users/yeni/Projects/odevkuafor/odevkuafor/wwwroot/js/site.js",
       "PackagePath": "staticwebassets/js/site.js"
     },

@@ -1,4 +1,4 @@
-﻿// AppointmentController.cs
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -41,47 +41,174 @@ namespace odevkuafor.Controllers
             return View(viewModel);
         }
 
+
+        // Create POST metodu
         [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(AppointmentViewModel viewModel)
+        public async Task<IActionResult> Create(AppointmentViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
+                model.Employees = await _context.Employees.ToListAsync();
+                model.Services = await _context.Services.ToListAsync();
+                return View(model);
+            }
+
+            // UserId al
+            int? userId = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int parsedUserId))
                 {
-                    if (!TimeSpan.TryParse(viewModel.AppointmentTime, out TimeSpan appointmentTime))
-                    {
-                        ModelState.AddModelError("AppointmentTime", "Geçersiz saat formatı");
-                        return View(viewModel);
-                    }
-
-                    var combinedDateTime = viewModel.AppointmentDate.Date + appointmentTime;
-                    var localTimeZone = TimeZoneInfo.Local;
-                    var appointmentDateOffset = new DateTimeOffset(combinedDateTime, localTimeZone.GetUtcOffset(combinedDateTime));
-
-                    var appointment = new Appointment
-                    {
-                        CustomerName = viewModel.CustomerName,
-                        AppointmentDate = appointmentDateOffset,
-                        EmployeeId = viewModel.EmployeeId,
-                        ServiceId = viewModel.ServiceId
-                    };
-
-                    _context.Appointments.Add(appointment);
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError("", "Randevu oluşturulurken bir hata oluştu: " + ex.Message);
+                    userId = parsedUserId;
                 }
             }
 
-            viewModel.Employees = await _context.Employees.ToListAsync();
-            viewModel.Services = await _context.Services.ToListAsync();
-            return View(viewModel);
+            // Local DateTime'ı oluştur ve UTC'ye çevir
+            var localDateTime = DateTime.Parse($"{model.AppointmentDate.ToString("yyyy-MM-dd")} {model.AppointmentTime}");
+            localDateTime = DateTime.SpecifyKind(localDateTime, DateTimeKind.Local);
+            var utcDateTime = localDateTime.ToUniversalTime();
+
+            var appointment = new Appointment
+            {
+                CustomerName = model.CustomerName,
+                AppointmentDate = utcDateTime,
+                ServiceId = model.ServiceId,
+                EmployeeId = model.EmployeeId,
+                UserId = userId
+            };
+
+
+            // Çifte rezervasyonu kontrol et
+            var isTimeSlotAvailable = await IsTimeSlotAvailable(
+                appointment.AppointmentDate,
+                appointment.EmployeeId,
+                appointment.ServiceId);
+
+            if (!isTimeSlotAvailable)
+            {
+                ModelState.AddModelError("", "Bu saat dilimi artık müsait değil. Lütfen başka bir saat seçin.");
+                model.Employees = await _context.Employees.ToListAsync();
+                model.Services = await _context.Services.ToListAsync();
+                return View(model);
+            }
+
+            _context.Appointments.Add(appointment);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
+
+
+        private async Task<bool> IsTimeSlotAvailable(DateTimeOffset appointmentTime, int employeeId, int serviceId)
+        {
+            var service = await _context.Services.FindAsync(serviceId);
+            if (service == null) return false;
+
+            var appointmentEnd = appointmentTime.AddMinutes(service.DurationInMinutes);
+
+            return !await _context.Appointments
+                .AnyAsync(a => a.EmployeeId == employeeId &&
+                              a.AppointmentDate < appointmentEnd &&
+                              appointmentTime < a.AppointmentDate.AddMinutes(
+                                  a.Service != null ? a.Service.DurationInMinutes : 0));
+        }
+
+        [HttpGet("GetAvailableHours")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAvailableHours(DateTime date, int employeeId, int serviceId)
+        {
+            try
+            {
+                var service = await _context.Services.FindAsync(serviceId);
+                if (service == null) return BadRequest("Hizmet bulunamadı");
+
+                // Debug: Seçilen tarih ve servis bilgileri
+                Console.WriteLine($"Selected Date: {date}, Service Duration: {service.DurationInMinutes} minutes");
+
+                var utcDate = DateTime.SpecifyKind(date, DateTimeKind.Local).ToUniversalTime();
+
+                // Mevcut randevuları al
+                var existingAppointments = await _context.Appointments
+                    .Include(a => a.Service)
+                    .Where(a => a.EmployeeId == employeeId &&
+                               a.AppointmentDate.Date == utcDate.Date)
+                    .ToListAsync();
+
+                // Debug: Mevcut randevuları listele
+                foreach (var app in existingAppointments)
+                {
+                    Console.WriteLine($"Existing appointment: {app.AppointmentDate.LocalDateTime:HH:mm}, Duration: {app.Service.DurationInMinutes}");
+                }
+
+                var availableSlots = new List<string>();
+                var busySlots = new HashSet<DateTime>();
+
+                // Tüm dolu slotları hesapla
+                foreach (var appointment in existingAppointments)
+                {
+                    var appointmentStart = appointment.AppointmentDate.LocalDateTime;
+                    var appointmentEnd = appointmentStart.AddMinutes(appointment.Service.DurationInMinutes);
+
+                    // Her 30 dakikalık slotu işaretle
+                    for (var time = appointmentStart; time < appointmentEnd; time = time.AddMinutes(30))
+                    {
+                        busySlots.Add(time);
+                        Console.WriteLine($"Marked as busy: {time:HH:mm}");
+                    }
+                }
+
+                // Tüm olası slotları kontrol et
+                var workDayStart = date.Date.AddHours(9); // 09:00
+                var workDayEnd = date.Date.AddHours(18);  // 18:00
+
+                for (var time = workDayStart; time < workDayEnd; time = time.AddMinutes(30))
+                {
+                    var isAvailable = true;
+
+                    // Hizmet süresi boyunca her 30 dakikalık slotu kontrol et
+                    for (var checkTime = time;
+                         checkTime < time.AddMinutes(service.DurationInMinutes);
+                         checkTime = checkTime.AddMinutes(30))
+                    {
+                        if (busySlots.Contains(checkTime))
+                        {
+                            isAvailable = false;
+                            Console.WriteLine($"Slot {time:HH:mm} is not available due to conflict at {checkTime:HH:mm}");
+                            break;
+                        }
+                    }
+
+                    // Geçmiş saat kontrolü
+                    if (date.Date == DateTime.Today && time <= DateTime.Now)
+                    {
+                        isAvailable = false;
+                        Console.WriteLine($"Slot {time:HH:mm} is in the past");
+                    }
+
+                    // Hizmet süresi mesai saatini aşıyor mu kontrolü
+                    if (time.AddMinutes(service.DurationInMinutes) > workDayEnd)
+                    {
+                        isAvailable = false;
+                        Console.WriteLine($"Slot {time:HH:mm} extends beyond working hours");
+                    }
+
+                    if (isAvailable)
+                    {
+                        availableSlots.Add(time.ToString("HH:mm"));
+                        Console.WriteLine($"Added available slot: {time:HH:mm}");
+                    }
+                }
+
+                return Json(availableSlots);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAvailableHours: {ex}");
+                return BadRequest($"Bir hata oluştu: {ex.Message}");
+            }
+        }
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
@@ -110,16 +237,32 @@ namespace odevkuafor.Controllers
 
             if (ModelState.IsValid)
             {
-                if (await IsEmployeeAvailable(appointment, appointment.Id))
+                try
                 {
-                    ModelState.AddModelError("", "Bu çalışan bu saatte başka bir randevuya sahip.");
-                    await LoadDropdownData();
-                    return View(appointment);
-                }
+                    var isAvailable = await IsTimeSlotAvailable(
+                        appointment.AppointmentDate,
+                        appointment.EmployeeId,
+                        appointment.ServiceId);
 
-                _context.Appointments.Update(appointment);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                    if (!isAvailable)
+                    {
+                        ModelState.AddModelError("", "Seçilen saat dilimi dolu");
+                        await LoadDropdownData();
+                        return View(appointment);
+                    }
+
+                    _context.Update(appointment);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!await _context.Appointments.AnyAsync(e => e.Id == id))
+                    {
+                        return NotFound();
+                    }
+                    throw;
+                }
             }
 
             await LoadDropdownData();
@@ -142,120 +285,10 @@ namespace odevkuafor.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpGet("GetAvailableHours")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetAvailableHours([FromQuery] string date, [FromQuery] int employeeId, [FromQuery] int serviceId)
-        {
-            if (string.IsNullOrEmpty(date) || employeeId <= 0 || serviceId <= 0)
-            {
-                return BadRequest("Geçersiz parametreler");
-            }
-
-            try
-            {
-                // Temel kontroller
-                if (!DateTime.TryParse(date, out DateTime selectedDate))
-                {
-                    return BadRequest("Geçersiz tarih formatı");
-                }
-
-                var service = await _context.Services.FindAsync(serviceId);
-                if (service == null)
-                {
-                    return BadRequest("Hizmet bulunamadı");
-                }
-
-                // Çalışanın bu hizmeti verip vermediğini kontrol et
-                var employeeService = await _context.EmployeeServices
-                    .AnyAsync(es => es.EmployeeId == employeeId && es.ServiceId == serviceId);
-                if (!employeeService)
-                {
-                    return BadRequest("Çalışan bu hizmeti vermiyor");
-                }
-
-                var businessHours = new List<string>();
-                var startHour = 9;  // İş başlangıç saati
-                var endHour = 19;   // İş bitiş saati
-
-                // Mevcut randevuları getir
-                var existingAppointments = await _context.Appointments
-                    .Where(a => a.EmployeeId == employeeId &&
-                           a.AppointmentDate.Date == selectedDate.Date)
-                    .OrderBy(a => a.AppointmentDate)
-                    .ToListAsync();
-
-                // Her yarım saatlik dilim için kontrol
-                for (int hour = startHour; hour < endHour; hour++)
-                {
-                    for (int minute = 0; minute < 60; minute += 30)
-                    {
-                        var currentTime = selectedDate.Date.AddHours(hour).AddMinutes(minute);
-
-                        // Hizmet süresini ekleyerek bitiş zamanını hesapla
-                        var endTime = currentTime.AddMinutes(service.DurationInMinutes);
-
-                        // Mesai saatleri dışına taşıyorsa bu saati atla
-                        if (endTime.Hour >= endHour || (endTime.Hour == endHour && endTime.Minute > 0))
-                        {
-                            continue;
-                        }
-
-                        bool isAvailable = true;
-
-                        // Mevcut randevularla çakışma kontrolü
-                        foreach (var existing in existingAppointments)
-                        {
-                            var existingEndTime = existing.AppointmentDate.DateTime.AddMinutes(service.DurationInMinutes);
-
-                            // Çakışma kontrolü
-                            if ((currentTime >= existing.AppointmentDate.DateTime && currentTime < existingEndTime) ||
-                                (endTime > existing.AppointmentDate.DateTime && endTime <= existingEndTime))
-                            {
-                                isAvailable = false;
-                                break;
-                            }
-                        }
-
-                        if (isAvailable)
-                        {
-                            businessHours.Add($"{hour:D2}:{minute:D2}");
-                        }
-                    }
-                }
-
-                return Json(businessHours);
-            }
-            catch (Exception ex)
-            {
-                // Hata durumunda log tutuyoruz
-                Console.WriteLine($"GetAvailableHours Error: {ex.Message}");
-                return StatusCode(500, "Bir hata oluştu");
-            }
-        }
         private async Task LoadDropdownData()
         {
-            ViewBag.Services = await _context.Services.ToListAsync() ?? new List<Service>();
-            ViewBag.Employees = await _context.Employees.ToListAsync() ?? new List<Employee>();
-        }
-
-        private async Task<bool> IsEmployeeAvailable(Appointment appointment, int? excludeAppointmentId = null)
-        {
-            var service = await _context.Services.FindAsync(appointment.ServiceId);
-            if (service == null) return false;
-
-            var appointmentDate = appointment.AppointmentDate;
-            var startTime = appointmentDate;
-            var endTime = startTime.AddMinutes(service.DurationInMinutes);
-
-            var conflictingAppointment = await _context.Appointments
-                .Where(a =>
-                    a.EmployeeId == appointment.EmployeeId &&
-                    a.Id != (excludeAppointmentId ?? 0) &&
-                    ((a.AppointmentDate <= startTime && a.AppointmentDate.AddMinutes(service.DurationInMinutes) > startTime) ||
-                     (a.AppointmentDate < endTime && a.AppointmentDate.AddMinutes(service.DurationInMinutes) >= endTime)))
-                .FirstOrDefaultAsync();
-
-            return conflictingAppointment == null;
+            ViewBag.Services = await _context.Services.ToListAsync();
+            ViewBag.Employees = await _context.Employees.ToListAsync();
         }
     }
 }

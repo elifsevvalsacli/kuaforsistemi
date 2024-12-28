@@ -30,5 +30,9 @@
     <Folder Include="Views\Account\" />
     <Folder Include="Migrations\" />
     <Folder Include="Views\Admin\" />
+    <Folder Include="wwwroot\images\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="wwwroot\images\" />
   </ItemGroup>
 </Project>

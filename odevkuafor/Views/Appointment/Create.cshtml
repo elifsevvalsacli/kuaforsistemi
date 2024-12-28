@@ -4,6 +4,11 @@
 <div class="container mt-4">
     <h2 class="mb-4">Randevu Oluştur</h2>
 
+    <!-- Add an alert div for showing warnings -->
+    <div id="timeSlotWarning" class="alert alert-warning" style="display: none;" role="alert">
+        Bu saat dilimi için randevu dolu! Lütfen başka bir saat seçin.
+    </div>
+
     <form asp-action="Create" method="post" class="needs-validation" novalidate>
         <div class="mb-3">
             <label for="CustomerName" class="form-label">Adınız:</label>
@@ -66,75 +71,57 @@
         <button type="submit" class="btn btn-primary">Randevu Oluştur</button>
     </form>
 </div>
-<script>// Sayfa yüklendiğinde çalışacak kod
-    // Sayfa yüklendiğinde çalışacak kod
-    async function updateAvailableHours() {
-        const dateInput = document.getElementById('AppointmentDate');
-        const employeeId = document.getElementById('EmployeeId').value;
-        const serviceId = document.getElementById('ServiceId').value;
-        const timeSelect = document.getElementById('AppointmentTime');
 
-        // Tüm gerekli alanların dolu olduğunu kontrol et
-        if (!dateInput.value || !employeeId || !serviceId) {
-            timeSelect.innerHTML = '<option value="">Önce diğer alanları doldurun</option>';
-            return;
-        }
+<script>async function updateAvailableHours() {
+        const date = document.getElementById("AppointmentDate").value;
+        const employeeId = document.getElementById("EmployeeId").value;
+        const serviceId = document.getElementById("ServiceId").value;
+        const warningDiv = document.getElementById("timeSlotWarning");
+
+        // Hide any existing warning
+        warningDiv.style.display = "none";
+
+        if (!date || !employeeId || !serviceId) return;
 
         try {
-            timeSelect.innerHTML = '<option value="">Yükleniyor...</option>';
-
-            // URL'yi oluştururken tarihi doğru formatta gönderdiğimizden emin oluyoruz
-            const date = new Date(dateInput.value);
-            const formattedDate = date.toISOString().split('T')[0];
-
-            const response = await fetch(
-                `/Appointment/GetAvailableHours?date=${encodeURIComponent(formattedDate)}&employeeId=${employeeId}&serviceId=${serviceId}`,
-                {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                }
-            );
-
+            const response = await fetch(`/Appointment/GetAvailableHours?date=${date}&employeeId=${employeeId}&serviceId=${serviceId}`);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error("Saatler alınamadı");
             }
 
-            const hours = await response.json();
+            const availableHours = await response.json();
+            const timeSelect = document.getElementById("AppointmentTime");
+            timeSelect.innerHTML = ""; // Önceki seçenekleri temizle
 
-            timeSelect.innerHTML = '<option value="">Saat Seçin</option>';
+            if (availableHours.length === 0) {
+                // If no hours are available, show warning
+                warningDiv.textContent = "Bu tarih için uygun randevu saati bulunmamaktadır.";
+                warningDiv.style.display = "block";
 
-            if (hours && hours.length > 0) {
-                hours.forEach(hour => {
-                    const option = document.createElement('option');
+                // Add a disabled default option
+                const defaultOption = document.createElement("option");
+                defaultOption.value = "";
+                defaultOption.textContent = "Uygun saat bulunmamaktadır";
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                timeSelect.appendChild(defaultOption);
+            } else {
+                availableHours.forEach(hour => {
+                    const option = document.createElement("option");
                     option.value = hour;
                     option.textContent = hour;
                     timeSelect.appendChild(option);
                 });
-            } else {
-                timeSelect.innerHTML = '<option value="">Bu tarihte uygun saat bulunamadı</option>';
             }
         } catch (error) {
-            console.error('Hata:', error);
-            timeSelect.innerHTML = '<option value="">Bir hata oluştu, lütfen tekrar deneyin</option>';
+            console.error("Hata:", error);
+            warningDiv.textContent = "Randevu saatleri yüklenirken bir hata oluştu.";
+            warningDiv.style.display = "block";
         }
     }
 
-    // Form alanlarının değişikliklerini dinle
-    document.addEventListener('DOMContentLoaded', function () {
-        const dateInput = document.getElementById('AppointmentDate');
-        const employeeSelect = document.getElementById('EmployeeId');
-        const serviceSelect = document.getElementById('ServiceId');
-
-        // İlk yüklemede minimum tarihi ayarla
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        dateInput.min = tomorrow.toISOString().split('T')[0];
-
-        // Herhangi bir alan değiştiğinde saatleri güncelle
-        dateInput.addEventListener('change', updateAvailableHours);
-        employeeSelect.addEventListener('change', updateAvailableHours);
-        serviceSelect.addEventListener('change', updateAvailableHours);
-    });
-    </script>
+    // Add event listener for time slot selection
+    document.getElementById("AppointmentTime").addEventListener("change", function (e) {
+        const warningDiv = document.getElementById("timeSlotWarning");
+        warningDiv.style.display = "none"; // Hide warning when new time is selected
+    });</script>
