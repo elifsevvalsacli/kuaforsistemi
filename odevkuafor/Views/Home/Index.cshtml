@@ -4,23 +4,63 @@
 
 <div class="container text-center mt-5">
     <!-- Başlık ve Tanıtım Bölümü -->
-    <div class="hero-section">
-        <h1 class="display-4 text-primary">Kuaför Randevu Sistemi</h1>
-        <p class="lead text-muted">Hayalinizdeki saç modelini kolayca bulup randevu oluşturun. Profesyonel hizmet, hızlı ve pratik!</p>
-        <hr class="my-4">
+    <div class="hero-section mb-5">
+        <h1 class="display-3 text-primary font-weight-bold">Kuaför Randevu Sistemi</h1>
+        <p class="lead text-muted mb-4">Hayalinizdeki saç modelini kolayca bulup randevu oluşturun. Profesyonel hizmet, hızlı ve pratik!</p>
+        <hr class="my-4 mx-auto" style="width: 60%; border-top: 2px solid #007bff;">
         <p class="text-muted">İhtiyacınız olan tüm kuaför hizmetlerini tek tıkla keşfedin.</p>
+
+        <!-- Tanıtım Yazısı -->
+        <h2 class="display-5 text-dark font-weight-bold mt-5">Saçınıza Değer Katın, Kendinizi Yenileyin!</h2>
+        <p class="lead text-muted mb-4">Özel kuaför salonumuzda, sadece bir saç kesimi değil, aynı zamanda size özgü bir deneyim sunuyoruz. Profesyonel ekibimiz, en son trendleri takip ederek, her saç tipine ve isteğe uygun hizmetler sunar. Mükemmel bir görünüm için ihtiyacınız olan her şey burada!</p>
+        <p class="text-muted mb-4">Gelişmiş teknikler ve kaliteli ürünlerle, saçınıza bakım yaparken aynı zamanda sizi rahatlatan bir atmosferde kendinizi özel hissedeceksiniz. Her randevunuzda, size özel bir deneyim sunarak, güzelliğinizi en üst düzeye çıkarıyoruz.</p>
+        <p class="text-muted">Hizmetlerimiz arasında; saç kesimi, renklendirme, bakım, saç tasarımı ve daha fazlası bulunmaktadır. Hayalinizdeki saç stilini yaratmak için hemen bizimle iletişime geçin!</p>
     </div>
 
     <!-- Görsel ve İletişim Bölümü -->
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <img src="~/images/beauty-salon.jpg" class="img-fluid rounded shadow" alt="Kuaför Salonu">
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-8">
+            <img src="~/images/beauty-salon.jpg" class="img-fluid rounded shadow-lg" alt="Kuaför Salonu" style="max-height: 400px; object-fit: cover;">
         </div>
     </div>
 
     <!-- Kayıt Ol ve Giriş Yap Butonları -->
     <div class="mt-4">
-        <a class="btn btn-primary btn-lg mx-2" href="/Account/Register" role="button">Kayıt Ol</a>
-        <a class="btn btn-success btn-lg mx-2" href="/Account/Login" role="button">Giriş Yap</a>
+        <a class="btn btn-primary btn-lg mx-2 shadow-sm" href="/Account/Register" role="button">Kayıt Ol</a>
+        <a class="btn btn-success btn-lg mx-2 shadow-sm" href="/Account/Login" role="button">Giriş Yap</a>
     </div>
 </div>
+
+<!-- CSS -->
+<style>
+    .hero-section {
+        background-color: #f8f9fa;
+        padding: 40px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .hero-section h1 {
+        font-family: 'Arial', sans-serif;
+        font-size: 3.5rem;
+        color: #007bff;
+    }
+
+    .hero-section p {
+        font-size: 1.2rem;
+    }
+
+    .btn {
+        transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-5px);
+        background-color: #0056b3;
+    }
+
+    .img-fluid {
+        border-radius: 15px;
+    }
+
+</style>
