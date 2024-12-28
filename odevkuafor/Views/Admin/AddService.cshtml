@@ -1,37 +1,60 @@
-﻿@model Service
+﻿@model odevkuafor.Models.Service
 
-<h1>Hizmet Türü Ekle</h1>
+<div class="container mt-4">
+    <h1>Yeni Hizmet Ekle</h1>
 
-<form asp-action="AddService" method="post">
-    <div class="mb-3">
-        <label>Hizmet Adı</label>
-        <input asp-for="Name" class="form-control" required />
-    </div>
+    <form asp-action="AddService" asp-controller="Admin" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="All" class="text-danger"></div>
 
-    <div class="mb-3">
-        <label>Ücret</label>
-        <input asp-for="Price" class="form-control" type="number" step="0.01" required />
-    </div>
+        <div class="form-group mb-3">
+            <label asp-for="Name" class="control-label">Hizmet Adı</label>
+            <input asp-for="Name" class="form-control" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
 
-    <div class="mb-3">
-        <label>Çalışanlar</label>
-        @if (ViewBag.Employees != null)
-        {
-            foreach (var employee in ViewBag.Employees)
-            {
-                <div class="form-check">
-                    <input type="checkbox"
-                           name="employeeIds"
-                           value="@employee.Id"
-                           class="form-check-input" />
-                    <label class="form-check-label">
-                        @employee.Name
-                    </label>
-                </div>
-            }
-        }
-    </div>
+        <div class="form-group mb-3">
+            <label asp-for="Price" class="control-label">Ücret (TL)</label>
+            <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" required />
+            <span asp-validation-for="Price" class="text-danger"></span>
+        </div>
 
-    <button type="submit" class="btn btn-primary">Kaydet</button>
-    <a asp-action="Services" class="btn btn-secondary">İptal</a>
-</form>
+        <div class="form-group mb-3">
+            <label asp-for="DurationInMinutes" class="control-label">Süre (Dakika)</label>
+            <input asp-for="DurationInMinutes" class="form-control" type="number" min="1" required />
+            <span asp-validation-for="DurationInMinutes" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label class="control-label">Hizmeti Verecek Çalışanlar</label>
+            <div class="row">
+                @if (ViewBag.Employees != null)
+                {
+                    foreach (var employee in ViewBag.Employees)
+                    {
+                        <div class="col-md-4 mb-2">
+                            <div class="form-check">
+                                <input type="checkbox"
+                                       name="employeeIds"
+                                       value="@employee.Id"
+                                       class="form-check-input" />
+                                <label class="form-check-label">
+                                    @employee.Name - @employee.Specialization
+                                </label>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="form-group mt-4">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Services" class="btn btn-secondary ms-2">İptal</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}           

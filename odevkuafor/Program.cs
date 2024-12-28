@@ -1,79 +1,77 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Program.cs
+using Microsoft.EntityFrameworkCore;
 using odevkuafor.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Servisleri ekliyoruz
+// Service registrations
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); // PostgreSQL için UseNpgsql
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// MVC desteğini ekliyoruz
 builder.Services.AddControllersWithViews();
 
-// Kimlik doğrulama ve yetkilendirme servislerini ekliyoruz
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Account/Login"; // Giriş yapma sayfası
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Cookie süresi
+        options.LoginPath = "/Account/Login";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
     });
 
 builder.Services.AddAuthorization(options =>
 {
-    // Özel yetkilendirme politikaları ekleyebilirsiniz
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
 
-// Oturum desteği
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Oturum süresi
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true; // Gerekli oturum cookie
+    options.Cookie.IsEssential = true;
 });
 
 var app = builder.Build();
 
-// HTTP request pipeline yapılandırması
-if (!app.Environment.IsDevelopment())
+// Configure middleware pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-else
-{
-    app.UseDeveloperExceptionPage();  // Geliştirme ortamında hata sayfası
-}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
+app.UseSession();
+app.UseAuthentication();
+app.UseAuthorization();
 
-// Authentication ve Authorization middleware'lerini ekliyoruz
-app.UseSession(); // Oturum yönetimi
-app.UseAuthentication(); // Kimlik doğrulama işlemi
-app.UseAuthorization();  // Yetkilendirme işlemi
-
-// Veritabanı seed işlemi
+// Seed admin user
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    ApplicationDbContext.SeedAdminUser(dbContext);  // Admin kullanıcısını ekle
+    await ApplicationDbContext.SeedAdminUser(dbContext);
 }
-// Routing işlemi
+
+// Configure routes
+app.MapControllerRoute(
+    name: "appointment",
+    pattern: "Appointment/{action=Index}/{id?}",
+    defaults: new { controller = "Appointment" });
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Özel bir yönlendirme (isteğe bağlı)
 app.MapControllerRoute(
     name: "account",
     pattern: "Account/{action=Login}/{id?}",
     defaults: new { controller = "Account" });
 
-// Admin için özel bir yönlendirme
 app.MapControllerRoute(
     name: "admin",
     pattern: "Admin/{action=Index}/{id?}",

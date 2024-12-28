@@ -1,11 +1,21 @@
 ﻿@model IEnumerable<odevkuafor.Models.Employee>
-
-<table>
+<h2>Employees</h2>
+<!-- Çalışan Ekleme Formu -->
+<form asp-action="AddEmployee" method="post">
+    <div>
+        <label for="Name">Name:</label>
+        <input type="text" id="Name" name="Name" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Add Employee</button>
+</form>
+<hr />
+<!-- Çalışan Listesi -->
+<table class="table">
     <thead>
         <tr>
             <th>Name</th>
-            <th>Specialization</th>
             <th>Services</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -13,19 +23,43 @@
         {
             <tr>
                 <td>@employee.Name</td>
-                <td>@employee.Specialization</td>
                 <td>
-                    @if (employee.Services != null && employee.Services.Any())
+                    <!-- Servis Atama Formu -->
+                    <form asp-action="AssignServiceToEmployee" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="employeeId" value="@employee.Id" />
+                        <select name="serviceIds" class="form-select form-select-sm d-inline" style="width: auto;">
+                            @foreach (var service in ViewBag.Services)
+                            {
+                                <option value="@service.Id">@service.Name</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm">Hizmet Ata</button>
+                    </form>
+
+                    <!-- Atanmış Servisler -->
+                    @if (employee.EmployeeServices != null && employee.EmployeeServices.Any())
                     {
-                        @foreach (var service in employee.Services)
-                        {
-                            <span>@service.Name</span><br />
-                        }
+                        <div class="mt-2">
+                            @foreach (var es in employee.EmployeeServices)
+                            {
+                                <span class="badge bg-info me-1">
+                                    @es.Service.Name
+                                </span>
+                            }
+                        </div>
                     }
-                    else
-                    {
-                        <span>No services assigned</span>
-                    }
+                </td>
+                <td>
+                    <!-- Silme Butonu -->
+                    <form asp-action="DeleteEmployee" method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="@employee.Id" />
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('Are you sure you want to delete this employee?');">
+                            Delete
+                        </button>
+                    </form>
                 </td>
             </tr>
         }

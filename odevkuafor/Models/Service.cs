@@ -1,22 +1,25 @@
 ﻿using System.Collections.Generic;
-using odevkuafor.Models;
 using System.ComponentModel.DataAnnotations;
-using System.Xml.Linq;
 
 namespace odevkuafor.Models
 {
     public class Service
     {
         public int Id { get; set; }
-        public string Name { get; set; } = string.Empty; // Hizmet adı
-        public string ServiceType { get; set; } = string.Empty; // Hizmet türü
-        public decimal Price { get; set; } // Hizmet ücreti
-        public int DurationInMinutes { get; set; } // Dakika cinsinden işlem süresi
 
-        public ICollection<Appointment> Appointments { get; set; }
+        [Required(ErrorMessage = "Hizmet adı zorunludur")]
+        public string Name { get; set; } = string.Empty;
 
-        // Many-to-Many ilişki için navigation property
-        public ICollection<EmployeeService> EmployeeServices { get; set; } = new HashSet<EmployeeService>();
+        [Required(ErrorMessage = "Ücret zorunludur")]
+        public decimal Price { get; set; }
+
+       
+        public string ServiceType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Süre zorunludur")]
+        public int DurationInMinutes { get; set; }
+
+        public virtual ICollection<Appointment>? Appointments { get; set; }
+        public virtual ICollection<EmployeeService> EmployeeServices { get; set; } = new HashSet<EmployeeService>();
     }
 }
-

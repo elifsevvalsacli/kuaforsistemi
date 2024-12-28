@@ -6,6 +6,7 @@
 /Users/yeni/Projects/odevkuafor/odevkuafor/bin/Debug/net6.0/odevkuafor.runtimeconfig.json
 /Users/yeni/Projects/odevkuafor/odevkuafor/bin/Debug/net6.0/odevkuafor.dll
 /Users/yeni/Projects/odevkuafor/odevkuafor/bin/Debug/net6.0/odevkuafor.pdb
+/Users/yeni/Projects/odevkuafor/odevkuafor/bin/Debug/net6.0/BCrypt.Net-Next.dll
 /Users/yeni/Projects/odevkuafor/odevkuafor/bin/Debug/net6.0/Humanizer.dll
 /Users/yeni/Projects/odevkuafor/odevkuafor/bin/Debug/net6.0/Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
 /Users/yeni/Projects/odevkuafor/odevkuafor/bin/Debug/net6.0/Microsoft.Data.SqlClient.dll
@@ -69,4 +70,3 @@
 /Users/yeni/Projects/odevkuafor/odevkuafor/obj/Debug/net6.0/odevkuafor.pdb
 /Users/yeni/Projects/odevkuafor/odevkuafor/obj/Debug/net6.0/odevkuafor.genruntimeconfig.cache
 /Users/yeni/Projects/odevkuafor/odevkuafor/obj/Debug/net6.0/ref/odevkuafor.dll
-/Users/yeni/Projects/odevkuafor/odevkuafor/bin/Debug/net6.0/BCrypt.Net-Next.dll

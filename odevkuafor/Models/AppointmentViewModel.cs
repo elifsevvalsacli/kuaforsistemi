@@ -4,7 +4,7 @@ using odevkuafor.Models;
 public class AppointmentViewModel
 {
     public string CustomerName { get; set; }
-    public DateTime AppointmentDate { get; set; }
+    public DateTime AppointmentDate { get; set; }  // DateTimeOffset yerine DateTime kullanıyoruz
     public string AppointmentTime { get; set; }
     public int EmployeeId { get; set; }
     public int ServiceId { get; set; }

@@ -66,80 +66,75 @@
         <button type="submit" class="btn btn-primary">Randevu Oluştur</button>
     </form>
 </div>
-<script>function updateAvailableHours() {
+<script>// Sayfa yüklendiğinde çalışacak kod
+    // Sayfa yüklendiğinde çalışacak kod
+    async function updateAvailableHours() {
         const dateInput = document.getElementById('AppointmentDate');
-        const employeeSelect = document.getElementById('EmployeeId');
-        const serviceSelect = document.getElementById('ServiceId');
+        const employeeId = document.getElementById('EmployeeId').value;
+        const serviceId = document.getElementById('ServiceId').value;
         const timeSelect = document.getElementById('AppointmentTime');
 
-        const date = dateInput.value;
-        const employeeId = employeeSelect.value;
-        const serviceId = serviceSelect.value;
-
-        // Tüm gerekli alanların dolu olduğundan emin ol
-        if (!date || !employeeId || !serviceId) {
+        // Tüm gerekli alanların dolu olduğunu kontrol et
+        if (!dateInput.value || !employeeId || !serviceId) {
             timeSelect.innerHTML = '<option value="">Önce diğer alanları doldurun</option>';
             return;
         }
 
-        const selectedDate = new Date(date);
-        const dayOfWeek = selectedDate.getDay();
+        try {
+            timeSelect.innerHTML = '<option value="">Yükleniyor...</option>';
 
-        // Salı günü kontrolü (2 = Salı)
-        if (dayOfWeek === 2) {
-            alert('Salı günleri işletmemiz kapalıdır.');
-            dateInput.value = '';
+            // URL'yi oluştururken tarihi doğru formatta gönderdiğimizden emin oluyoruz
+            const date = new Date(dateInput.value);
+            const formattedDate = date.toISOString().split('T')[0];
+
+            const response = await fetch(
+                `/Appointment/GetAvailableHours?date=${encodeURIComponent(formattedDate)}&employeeId=${employeeId}&serviceId=${serviceId}`,
+                {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const hours = await response.json();
+
             timeSelect.innerHTML = '<option value="">Saat Seçin</option>';
-            return;
+
+            if (hours && hours.length > 0) {
+                hours.forEach(hour => {
+                    const option = document.createElement('option');
+                    option.value = hour;
+                    option.textContent = hour;
+                    timeSelect.appendChild(option);
+                });
+            } else {
+                timeSelect.innerHTML = '<option value="">Bu tarihte uygun saat bulunamadı</option>';
+            }
+        } catch (error) {
+            console.error('Hata:', error);
+            timeSelect.innerHTML = '<option value="">Bir hata oluştu, lütfen tekrar deneyin</option>';
         }
-
-        // Loading durumunu göster
-        timeSelect.innerHTML = '<option value="">Yükleniyor...</option>';
-        timeSelect.disabled = true;
-
-        // API'yi çağır
-        fetch(`/Appointment/GetAvailableHours?date=${date}&employeeId=${employeeId}&serviceId=${serviceId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(hours => {
-                timeSelect.innerHTML = '<option value="">Saat Seçin</option>';
-                if (hours && hours.length > 0) {
-                    hours.forEach(hour => {
-                        const option = document.createElement('option');
-                        option.value = hour;
-                        option.textContent = hour;
-                        timeSelect.appendChild(option);
-                    });
-                } else {
-                    timeSelect.innerHTML = '<option value="">Uygun saat bulunamadı</option>';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                timeSelect.innerHTML = '<option value="">Hata oluştu</option>';
-            })
-            .finally(() => {
-                timeSelect.disabled = false;
-            });
     }
 
-    // Sayfa yüklendiğinde ve ilgili alanlarda değişiklik olduğunda güncelle
+    // Form alanlarının değişikliklerini dinle
     document.addEventListener('DOMContentLoaded', function () {
         const dateInput = document.getElementById('AppointmentDate');
         const employeeSelect = document.getElementById('EmployeeId');
         const serviceSelect = document.getElementById('ServiceId');
 
-        // Bugünden önceki tarihleri seçilemez yap
+        // İlk yüklemede minimum tarihi ayarla
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        dateInput.min = today.toISOString().split('T')[0];
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        dateInput.min = tomorrow.toISOString().split('T')[0];
 
-        // Event listener'ları ekle
+        // Herhangi bir alan değiştiğinde saatleri güncelle
         dateInput.addEventListener('change', updateAvailableHours);
         employeeSelect.addEventListener('change', updateAvailableHours);
         serviceSelect.addEventListener('change', updateAvailableHours);
-    });</script>
+    });
+    </script>

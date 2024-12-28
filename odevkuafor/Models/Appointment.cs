@@ -1,27 +1,21 @@
-﻿using System.Linq;  // ToList() metodunu kullanabilmek için
+﻿using System.Linq; // ToList() metodunu kullanabilmek için
 
 namespace odevkuafor.Models
 {
     public class Appointment
     {
-        private DateTime _appointmentDate;
+        private DateTimeOffset _appointmentDate;
 
         public int Id { get; set; }
         public string CustomerName { get; set; } = string.Empty;
 
-        public DateTime AppointmentDate
+        public DateTimeOffset AppointmentDate
         {
             get => _appointmentDate;
             set
             {
-                if (value.Kind == DateTimeKind.Unspecified)
-                {
-                    _appointmentDate = DateTime.SpecifyKind(value, DateTimeKind.Utc);
-                }
-                else
-                {
-                    _appointmentDate = value.ToUniversalTime();
-                }
+                // DateTimeOffset değeri doğrudan atanır, UTC'ye dönüştürmeye gerek yok
+                _appointmentDate = value;
             }
         }
 
