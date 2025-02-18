@@ -22,7 +22,7 @@
         public int EmployeeId { get; set; }
         public Employee? Employee { get; set; }
         public string BarberName => Employee?.Name ?? string.Empty;
-
+        public bool IsApproved { get; set; }
         // Çalışanlara atanmış hizmetleri göstermek
         public List<Service> GetEmployeeServices()
         {

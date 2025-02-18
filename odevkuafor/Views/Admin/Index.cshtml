@@ -1,5 +1,47 @@
-﻿<h1>Admin Paneli</h1>
-<ul>
-    <li><a href="@Url.Action("Employees", "Admin")">Çalışan Yönetimi</a></li>
-    <li><a href="@Url.Action("Services", "Admin")">Hizmet Türleri Yönetimi</a></li>
-</ul>
+﻿@{
+    ViewData["Title"] = "Admin Paneli";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h3 mb-0">Admin Paneli</h1>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-3x mb-3 text-primary"></i>
+                            <h5 class="card-title">Çalışan Yönetimi</h5>
+                            <p class="card-text">Çalışanları görüntüle, ekle, düzenle ve sil</p>
+                            <a href="@Url.Action("Employees", "Admin")" class="btn btn-outline-primary">Yönet</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-cut fa-3x mb-3 text-success"></i>
+                            <h5 class="card-title">Hizmet Yönetimi</h5>
+                            <p class="card-text">Hizmet türlerini görüntüle ve düzenle</p>
+                            <a href="@Url.Action("Services", "Admin")" class="btn btn-outline-success">Yönet</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar-check fa-3x mb-3 text-info"></i>
+                            <h5 class="card-title">Randevu Yönetimi</h5>
+                            <p class="card-text">Randevuları görüntüle ve onayla</p>
+                            <a href="@Url.Action("Appointments", "Admin")" class="btn btn-outline-info">Görüntüle</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

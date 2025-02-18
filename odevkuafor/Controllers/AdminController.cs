@@ -14,11 +14,15 @@ public class AdminController : Controller
     }
 
     // Admin Paneli Ana Sayfası
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
+        ViewBag.Appointments = await _context.Appointments
+            .Include(a => a.Service)
+            .Include(a => a.Employee)
+            .OrderByDescending(a => a.AppointmentDate)
+            .ToListAsync();
         return View();
     }
-
     // Çalışan Listesi
     public async Task<IActionResult> Employees()
     {
@@ -163,7 +167,56 @@ public class AdminController : Controller
 
         return View();
     }
+    // Randevuları görüntüleme
+    [HttpGet("Appointments")]
+    public async Task<IActionResult> Appointments()
+    {
+        var appointments = await _context.Appointments
+            .Include(a => a.Service)
+            .Include(a => a.Employee)
+            .OrderByDescending(a => a.AppointmentDate)
+            .ToListAsync();
 
+        return View(appointments);
+    }
+
+    // Randevu onaylama
+    [HttpPost("ApproveAppointment/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApproveAppointment(int id)
+    {
+        var appointment = await _context.Appointments.FindAsync(id);
+        if (appointment == null)
+        {
+            TempData["Error"] = "Randevu bulunamadı.";
+            return RedirectToAction(nameof(Appointments));
+        }
+
+        appointment.IsApproved = true;
+        await _context.SaveChangesAsync();
+        TempData["Success"] = "Randevu onaylandı.";
+
+        return RedirectToAction(nameof(Appointments));
+    }
+
+    // Randevu silme
+    [HttpPost("DeleteAppointment/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAppointment(int id)
+    {
+        var appointment = await _context.Appointments.FindAsync(id);
+        if (appointment == null)
+        {
+            TempData["Error"] = "Randevu bulunamadı.";
+            return RedirectToAction(nameof(Appointments));
+        }
+
+        _context.Appointments.Remove(appointment);
+        await _context.SaveChangesAsync();
+        TempData["Success"] = "Randevu silindi.";
+
+        return RedirectToAction(nameof(Appointments));
+    }
     // Hizmet Atama (POST)
     [HttpPost]
     [ValidateAntiForgeryToken]

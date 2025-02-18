@@ -1,0 +1,44 @@
+﻿@model IEnumerable<odevkuafor.Models.Appointment>
+@{
+    ViewData["Title"] = "Randevu Yönetimi";
+}
+<div class="container mt-4">
+    <h2>Randevu Yönetimi</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Müşteri</th>
+                <th>Tarih</th>
+                <th>Hizmet</th>
+                <th>Çalışan</th>
+                <th>Durum</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var appointment in Model)
+            {
+                <tr>
+                    <td>@appointment.CustomerName</td>
+                    <td>@appointment.AppointmentDate.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@appointment.ServiceType</td>
+                    <td>@appointment.BarberName</td>
+                    <td>@(appointment.IsApproved ? "Onaylandı" : "Beklemede")</td>
+                    <td>
+                        @if (!appointment.IsApproved)
+                        {
+                            <form asp-action="ApproveAppointment" asp-route-id="@appointment.Id" method="post" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-success btn-sm">Onayla</button>
+                            </form>
+                        }
+                        <form asp-action="DeleteAppointment" asp-route-id="@appointment.Id" method="post" style="display: inline;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Randevuyu silmek istediğinize emin misiniz?')">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table> 
+</div>
